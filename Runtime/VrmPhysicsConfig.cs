@@ -1,14 +1,14 @@
 using System;
 using System.Collections.Generic;
 
-namespace Neko.VrmPhysicsTuner
+namespace VrmPhysicsTuner
 {
     [Serializable]
     public class VrmPhysicsConfig
     {
         public int version = 1;
         public string model = "";
-        public string generated_by = "neko-vrm-physics-tuner";
+        public string generated_by = "vrm-physics-tuner";
         public List<VrmSpringBoneCollider> colliders = new List<VrmSpringBoneCollider>();
         public List<VrmSpringBoneChain> chains = new List<VrmSpringBoneChain>();
     }

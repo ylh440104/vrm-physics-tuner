@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace Neko.VrmPhysicsTuner
+namespace VrmPhysicsTuner
 {
     public enum SpringBoneCategory
     {

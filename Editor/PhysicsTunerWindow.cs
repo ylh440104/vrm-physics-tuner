@@ -3,7 +3,7 @@ using System.IO;
 using UnityEditor;
 using UnityEngine;
 
-namespace Neko.VrmPhysicsTuner.Editor
+namespace VrmPhysicsTuner.Editor
 {
     public class PhysicsTunerWindow : EditorWindow
     {
@@ -16,13 +16,59 @@ namespace Neko.VrmPhysicsTuner.Editor
         private string _status = "";
         private Vector2 _scroll;
 
-        [MenuItem("N.E.K.O/VRM Physics Tuner")]
+        private readonly AssistantEndpoint _endpoint = new AssistantEndpoint();
+        private string _intent = "";
+        private SuggestionBatch _batch;
+        private string _assistantStatus = "";
+        private Vector2 _assistantScroll;
+        private readonly HashSet<int> _accepted = new HashSet<int>();
+
+        private readonly PreviewOverlay _preview = new PreviewOverlay();
+        private bool _previewing;
+        private double _lastTick;
+
+        [MenuItem("Tools/VRM Physics Tuner")]
         public static void Open()
         {
             var window = GetWindow<PhysicsTunerWindow>();
             window.titleContent = new GUIContent("VRM Physics Tuner");
-            window.minSize = new Vector2(420f, 520f);
+            window.minSize = new Vector2(460f, 640f);
             window.Show();
+        }
+
+        private void OnEnable()
+        {
+            EditorApplication.update += OnEditorUpdate;
+        }
+
+        private void OnDisable()
+        {
+            EditorApplication.update -= OnEditorUpdate;
+            _preview.Detach();
+            SceneView.duringSceneGui -= OnSceneGui;
+        }
+
+        private void OnEditorUpdate()
+        {
+            if (!_previewing || !_preview.IsLoaded) return;
+
+            var now = EditorApplication.timeSinceStartup;
+            if (_lastTick <= 0d)
+            {
+                _lastTick = now;
+                return;
+            }
+
+            var delta = (float)(now - _lastTick);
+            _lastTick = now;
+            _preview.Advance(delta);
+            SceneView.RepaintAll();
+        }
+
+        private void OnSceneGui(SceneView view)
+        {
+            if (!_previewing) return;
+            _preview.Draw();
         }
 
         private void OnGUI()
@@ -35,18 +81,15 @@ namespace Neko.VrmPhysicsTuner.Editor
 
             EditorGUILayout.Space();
             EditorGUILayout.BeginHorizontal();
-            if (GUILayout.Button("Scan"))
-            {
-                Scan();
-            }
-            if (GUILayout.Button("Build Config"))
-            {
-                BuildConfig();
-            }
+            if (GUILayout.Button("Scan")) Scan();
+            if (GUILayout.Button("Build Config")) BuildConfig();
             EditorGUILayout.EndHorizontal();
 
             EditorGUILayout.Space();
+            DrawPreviewControls();
+            EditorGUILayout.Space();
             DrawSummary();
+            DrawAssistant();
             DrawExport();
         }
 
@@ -55,6 +98,9 @@ namespace Neko.VrmPhysicsTuner.Editor
             _chains.Clear();
             _colliderBones.Clear();
             _config = null;
+            _batch = null;
+            _accepted.Clear();
+            StopPreview();
 
             if (_target == null)
             {
@@ -79,11 +125,74 @@ namespace Neko.VrmPhysicsTuner.Editor
 
             _config = PhysicsConfigBuilder.Build(_target, _chains, _colliderBones, _padding);
             _status = "Built " + _config.chains.Count + " chains, " + _config.colliders.Count + " colliders.";
+
+            if (_previewing) StartPreview();
+        }
+
+        private void DrawPreviewControls()
+        {
+            EditorGUILayout.BeginHorizontal();
+
+            if (!_previewing)
+            {
+                if (GUILayout.Button("Start Preview"))
+                {
+                    StartPreview();
+                }
+            }
+            else
+            {
+                if (GUILayout.Button("Stop Preview"))
+                {
+                    StopPreview();
+                }
+                if (GUILayout.Button("Restart"))
+                {
+                    _preview.Restart();
+                    _lastTick = 0d;
+                }
+            }
+
+            EditorGUILayout.EndHorizontal();
+
+            if (_previewing && _preview.IsLoaded)
+            {
+                EditorGUILayout.LabelField("Joints: " + _preview.JointCount
+                    + "   max drift: " + _preview.MaxDisplacement.ToString("0.####") + " m");
+            }
+        }
+
+        private void StartPreview()
+        {
+            if (_target == null)
+            {
+                _status = "Select an avatar root first.";
+                return;
+            }
+
+            if (_config == null) BuildConfig();
+            if (_config == null) return;
+
+            _preview.Attach(_target, _config);
+            _previewing = true;
+            _lastTick = 0d;
+            SceneView.duringSceneGui -= OnSceneGui;
+            SceneView.duringSceneGui += OnSceneGui;
+            SceneView.RepaintAll();
+        }
+
+        private void StopPreview()
+        {
+            _previewing = false;
+            _preview.Detach();
+            _lastTick = 0d;
+            SceneView.duringSceneGui -= OnSceneGui;
+            SceneView.RepaintAll();
         }
 
         private void DrawSummary()
         {
-            _scroll = EditorGUILayout.BeginScrollView(_scroll, GUILayout.Height(240f));
+            _scroll = EditorGUILayout.BeginScrollView(_scroll, GUILayout.Height(180f));
 
             if (_chains.Count > 0)
             {
@@ -107,6 +216,125 @@ namespace Neko.VrmPhysicsTuner.Editor
             }
 
             EditorGUILayout.EndScrollView();
+        }
+
+        private void DrawAssistant()
+        {
+            EditorGUILayout.Space();
+            EditorGUILayout.LabelField("Assistant", EditorStyles.boldLabel);
+
+            _endpoint.url = EditorGUILayout.TextField("Endpoint", _endpoint.url);
+            _endpoint.model = EditorGUILayout.TextField("Model", _endpoint.model);
+            _endpoint.apiKey = EditorGUILayout.PasswordField("API Key", _endpoint.apiKey);
+            _intent = EditorGUILayout.TextField("Intent", _intent);
+
+            EditorGUILayout.BeginHorizontal();
+            if (GUILayout.Button("Ask for Suggestions"))
+            {
+                RequestSuggestions();
+            }
+            if (GUILayout.Button("Apply Accepted"))
+            {
+                ApplyAccepted();
+            }
+            if (GUILayout.Button("Clear"))
+            {
+                _batch = null;
+                _accepted.Clear();
+                _assistantStatus = "";
+            }
+            EditorGUILayout.EndHorizontal();
+
+            if (!string.IsNullOrEmpty(_assistantStatus))
+            {
+                EditorGUILayout.HelpBox(_assistantStatus, MessageType.Info);
+            }
+
+            if (_batch == null || _batch.suggestions.Count == 0) return;
+
+            if (!string.IsNullOrEmpty(_batch.summary))
+            {
+                EditorGUILayout.LabelField(_batch.summary, EditorStyles.wordWrappedLabel);
+            }
+
+            _assistantScroll = EditorGUILayout.BeginScrollView(_assistantScroll, GUILayout.Height(140f));
+            for (int i = 0; i < _batch.suggestions.Count; i++)
+            {
+                var s = _batch.suggestions[i];
+                EditorGUILayout.BeginHorizontal();
+
+                bool accepted = _accepted.Contains(i);
+                bool now = EditorGUILayout.Toggle(accepted, GUILayout.Width(20f));
+                if (now != accepted)
+                {
+                    if (now) _accepted.Add(i);
+                    else _accepted.Remove(i);
+                }
+
+                string target = string.IsNullOrEmpty(s.bone) ? s.chain : s.chain + "/" + s.bone;
+                EditorGUILayout.LabelField(target + "  " + s.field + " -> " + s.value.ToString("0.####"));
+                EditorGUILayout.EndHorizontal();
+
+                if (!string.IsNullOrEmpty(s.reason))
+                {
+                    EditorGUILayout.LabelField("    " + s.reason, EditorStyles.miniLabel);
+                }
+            }
+            EditorGUILayout.EndScrollView();
+        }
+
+        private void RequestSuggestions()
+        {
+            if (_config == null) BuildConfig();
+            if (_config == null)
+            {
+                _assistantStatus = "Build a config first.";
+                return;
+            }
+
+            if (!_endpoint.IsUsable())
+            {
+                _assistantStatus = "Set endpoint and model.";
+                return;
+            }
+
+            EditorUtility.DisplayProgressBar("VRM Physics Tuner", "Requesting suggestions...", 0.5f);
+            try
+            {
+                var assistant = new HttpPhysicsAssistant(_endpoint);
+                _batch = assistant.RequestSuggestions(_config, _intent);
+            }
+            finally
+            {
+                EditorUtility.ClearProgressBar();
+            }
+
+            _accepted.Clear();
+
+            if (_batch == null || !_batch.ok)
+            {
+                _assistantStatus = "Failed: " + (_batch != null ? _batch.error : "no response");
+                return;
+            }
+
+            _assistantStatus = "Got " + _batch.suggestions.Count + " suggestions.";
+        }
+
+        private void ApplyAccepted()
+        {
+            if (_batch == null || _config == null) return;
+
+            var chosen = new SuggestionBatch();
+            chosen.ok = true;
+            for (int i = 0; i < _batch.suggestions.Count; i++)
+            {
+                if (_accepted.Contains(i)) chosen.suggestions.Add(_batch.suggestions[i]);
+            }
+
+            int applied = SuggestionApplier.Apply(_config, chosen, false);
+            _assistantStatus = "Applied " + applied + " of " + chosen.suggestions.Count + ".";
+
+            if (_previewing) StartPreview();
         }
 
         private void DrawExport()

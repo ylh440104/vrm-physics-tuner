@@ -1,8 +1,8 @@
 {
-  "name": "Neko.VrmPhysicsTuner.Editor",
-  "rootNamespace": "Neko.VrmPhysicsTuner.Editor",
+  "name": "VrmPhysicsTuner.Editor",
+  "rootNamespace": "VrmPhysicsTuner.Editor",
   "references": [
-    "Neko.VrmPhysicsTuner.Runtime"
+    "VrmPhysicsTuner.Runtime"
   ],
   "includePlatforms": [
     "Editor"

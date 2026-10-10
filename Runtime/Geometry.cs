@@ -1,6 +1,6 @@
 using System;
 
-namespace Neko.VrmPhysicsTuner
+namespace VrmPhysicsTuner
 {
     public struct Vec3
     {

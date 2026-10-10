@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
 
-namespace Neko.VrmPhysicsTuner
+namespace VrmPhysicsTuner
 {
     public sealed class JsonWriter
     {

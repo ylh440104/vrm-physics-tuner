@@ -18,36 +18,36 @@ https://github.com/ylh440104/vrm-physics-tuner.git
 
 ## 用
 
-菜单 `N.E.K.O` → `VRM Physics Tuner`。
+菜单 `Tools` → `VRM Physics Tuner`。
 
 1. 把模型的根节点拖到 **Avatar Root**
 2. 点 **Scan**，它会扫出头发/裙摆/尾巴这些带弹簧骨的链
 3. 点 **Build Config**，按骨骼实际位置算碰撞体半径
-4. 填 **Export Path**，点 **Export JSON**
+4. 点 **Start Preview**，在 Scene 里看这些链动起来
+5. 填 **Export Path**，点 **Export JSON**
 
-导出的 JSON 长这样：
+## 预览
 
-```json
-{
-  "version": 1,
-  "model": "sister1.0",
-  "colliders": [
-    { "bone": "J_Bip_C_Head", "shape": "capsule", "radius": 0.081, "offset": [0,0,0], "tail": [0,0.15,0] }
-  ],
-  "chains": [
-    {
-      "name": "hair_front:hair_front",
-      "bones": ["hair_front_01", "hair_front_02"],
-      "bone_paths": ["Root/Head/hair_front_01", "Root/Head/hair_front_01/hair_front_02"],
-      "stiffness": 0.9,
-      "drag_force": 0.4,
-      "gravity_power": 0.05,
-      "gravity_dir": [0,-1,0],
-      "hit_radius": 0.025
-    }
-  ]
-}
+点 Start Preview 之后，Scene 视图里会用青色线画出每条链，黄色线框球是碰撞体半径。面板上会显示关节数和最大偏移量。
+
+预览跑的是一个简化的弹簧骨模拟：方向向量每帧受重力、刚度、惯性影响，然后约束到固定骨长。参数改了重新点一次就能看到区别——把 stiffness 拉到 0、gravity_power 拉到 1，链会整个垂下去；反过来 stiffness 到 1 就基本不动。
+
+这个模拟跟 three-vrm 的实现不是逐行对应的，它的用途是让你**看出参数的方向性**，不是精确复刻网页端表现。
+
+## AI 辅助调参
+
+面板下方有一块 Assistant。填一个 OpenAI 兼容的 chat completions 端点、模型名、API key，写一句你想要的效果（比如"头发太硬了，让它软一点"），点 **Ask for Suggestions**。
+
+它会把这套配置连同你的意图发给模型，模型回一组建议，每条建议长这样：
+
 ```
+hair_front  stiffness -> 0.6
+    太硬了，头发几乎不动
+```
+
+每条前面有勾选框，默认不勾。你勾哪些就 **Apply Accepted** 应用哪些，没勾的不会动。所有数值都会夹到合法范围（stiffness/drag_force/gravity_power 夹到 0–1，radius 夹到 0.001–1），模型给离谱的数也不会写坏配置。
+
+key 只存在窗口内存里，不会落盘。
 
 ## 它是怎么算的
 
@@ -85,17 +85,33 @@ https://github.com/ylh440104/vrm-physics-tuner.git
 | `bones` / `bone_paths` | 骨骼名列表 / 对应路径列表 |
 | `stiffness` | 刚度 0–1 |
 | `drag_force` | 阻尼 0–1 |
-| `gravity_power` | 重力强度 |
+| `gravity_power` | 重力强度 0–1 |
 | `gravity_dir` | 重力方向 |
 | `hit_radius` | 碰撞检测半径 |
 
-## 已知问题
+导出的 JSON 长这样：
 
-**没在真 Unity 里跑过。** 开发环境是 arm64 Linux，Unity 编辑器只有 x86_64 版本，4.5GB 的包按当时 9.6KB/s 的网速得下五天，装不了。
-
-退而求其次，代码是拿 NuGet 上真实的 UnityEngine 程序集（2021.3.33）编译验证的，0 error 0 warning；另外写了元数据检查逐个核对用到的 API 确实存在，21 项全过。
-
-但编辑器 UI 交互、真 VRM 导入后的实际层级差异、运行时物理表现——这三样必须有人开 Unity 验一次。
+```json
+{
+  "version": 1,
+  "model": "sister1.0",
+  "colliders": [
+    { "bone": "J_Bip_C_Head", "shape": "capsule", "radius": 0.081, "offset": [0,0,0], "tail": [0,0.15,0] }
+  ],
+  "chains": [
+    {
+      "name": "hair_front:hair_front",
+      "bones": ["hair_front_01", "hair_front_02"],
+      "bone_paths": ["Root/Head/hair_front_01", "Root/Head/hair_front_01/hair_front_02"],
+      "stiffness": 0.9,
+      "drag_force": 0.4,
+      "gravity_power": 0.05,
+      "gravity_dir": [0,-1,0],
+      "hit_radius": 0.025
+    }
+  ]
+}
+```
 
 ## 许可
 

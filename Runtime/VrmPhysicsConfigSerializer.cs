@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace Neko.VrmPhysicsTuner
+namespace VrmPhysicsTuner
 {
     public static class VrmPhysicsConfigSerializer
     {
