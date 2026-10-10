@@ -19,6 +19,7 @@ namespace VrmPhysicsTuner.Editor
         private readonly AssistantEndpoint _endpoint = new AssistantEndpoint();
         private string _intent = "";
         private SuggestionBatch _batch;
+        private HttpPhysicsAssistant _assistant;
         private string _assistantStatus = "";
         private Vector2 _assistantScroll;
         private readonly HashSet<int> _accepted = new HashSet<int>();
@@ -46,10 +47,13 @@ namespace VrmPhysicsTuner.Editor
             EditorApplication.update -= OnEditorUpdate;
             _preview.Detach();
             SceneView.duringSceneGui -= OnSceneGui;
+            if (_assistant != null) _assistant.Cancel();
         }
 
         private void OnEditorUpdate()
         {
+            PollAssistant();
+
             if (!_previewing || !_preview.IsLoaded) return;
 
             var now = EditorApplication.timeSinceStartup;
@@ -229,10 +233,13 @@ namespace VrmPhysicsTuner.Editor
             _intent = EditorGUILayout.TextField("Intent", _intent);
 
             EditorGUILayout.BeginHorizontal();
-            if (GUILayout.Button("Ask for Suggestions"))
+            var pending = _assistant != null && _assistant.IsPending;
+            EditorGUI.BeginDisabledGroup(pending);
+            if (GUILayout.Button(pending ? "Waiting..." : "Ask for Suggestions"))
             {
                 RequestSuggestions();
             }
+            EditorGUI.EndDisabledGroup();
             if (GUILayout.Button("Apply Accepted"))
             {
                 ApplyAccepted();
@@ -298,26 +305,42 @@ namespace VrmPhysicsTuner.Editor
                 return;
             }
 
-            EditorUtility.DisplayProgressBar("VRM Physics Tuner", "Requesting suggestions...", 0.5f);
-            try
-            {
-                var assistant = new HttpPhysicsAssistant(_endpoint);
-                _batch = assistant.RequestSuggestions(_config, _intent);
-            }
-            finally
-            {
-                EditorUtility.ClearProgressBar();
-            }
+            if (_assistant == null) _assistant = new HttpPhysicsAssistant(_endpoint);
 
-            _accepted.Clear();
-
-            if (_batch == null || !_batch.ok)
+            if (!_assistant.Begin(_config, _intent))
             {
-                _assistantStatus = "Failed: " + (_batch != null ? _batch.error : "no response");
+                _assistantStatus = "Could not start the request.";
                 return;
             }
 
-            _assistantStatus = "Got " + _batch.suggestions.Count + " suggestions.";
+            _accepted.Clear();
+            _assistantStatus = "Waiting for suggestions...";
+        }
+
+        private void PollAssistant()
+        {
+            if (_assistant == null || !_assistant.IsPending) return;
+
+            var batch = _assistant.Poll();
+            if (batch == null)
+            {
+                Repaint();
+                return;
+            }
+
+            _batch = batch;
+            _accepted.Clear();
+
+            if (!batch.ok)
+            {
+                _assistantStatus = "Failed: " + batch.error;
+            }
+            else
+            {
+                _assistantStatus = "Got " + batch.suggestions.Count + " suggestions.";
+            }
+
+            Repaint();
         }
 
         private void ApplyAccepted()

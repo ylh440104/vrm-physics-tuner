@@ -22,11 +22,6 @@ namespace VrmPhysicsTuner
         public string error = "";
     }
 
-    public interface IPhysicsAssistant
-    {
-        SuggestionBatch RequestSuggestions(VrmPhysicsConfig config, string intent);
-    }
-
     public static class AssistantPrompt
     {
         public static string BuildSystemPrompt()

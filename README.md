@@ -14,7 +14,7 @@ Unity 2021.3 以上。Package Manager → Add package from git URL：
 https://github.com/ylh440104/vrm-physics-tuner.git
 ```
 
-想锁版本就加 `#v0.1.0`。
+想锁版本就加 `#v0.2.0`。
 
 ## 用
 
@@ -48,6 +48,8 @@ hair_front  stiffness -> 0.6
 每条前面有勾选框，默认不勾。你勾哪些就 **Apply Accepted** 应用哪些，没勾的不会动。所有数值都会夹到合法范围（stiffness/drag_force/gravity_power 夹到 0–1，radius 夹到 0.001–1），模型给离谱的数也不会写坏配置。
 
 key 只存在窗口内存里，不会落盘。
+
+请求是异步发的，按钮会变成 "Waiting..."，期间编辑器不会卡住。窗口关掉的话在途请求会被取消。
 
 ## 它是怎么算的
 
