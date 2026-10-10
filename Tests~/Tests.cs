@@ -518,7 +518,7 @@ namespace VrmPhysicsTuner.Tests
             Check(restored.chains.Count == config.chains.Count, "e2e json roundtrip chains");
             Check(restored.colliders.Count == config.colliders.Count, "e2e json roundtrip colliders");
 
-            var outPath = "/root/verify/e2e_output.json";
+            var outPath = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "vrm-physics-tuner-e2e.json");
             System.IO.File.WriteAllText(outPath, json);
             Check(System.IO.File.Exists(outPath), "e2e wrote output json");
 
