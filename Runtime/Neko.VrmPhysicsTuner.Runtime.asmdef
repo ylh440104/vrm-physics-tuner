@@ -1,6 +1,6 @@
 {
-  "name": "VrmPhysicsTuner.Runtime",
-  "rootNamespace": "VrmPhysicsTuner",
+  "name": "Neko.VrmPhysicsTuner.Runtime",
+  "rootNamespace": "Neko.VrmPhysicsTuner",
   "references": [],
   "includePlatforms": [],
   "excludePlatforms": [],

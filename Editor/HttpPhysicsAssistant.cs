@@ -3,7 +3,7 @@ using System.Text;
 using UnityEngine;
 using UnityEngine.Networking;
 
-namespace VrmPhysicsTuner.Editor
+namespace Neko.VrmPhysicsTuner.Editor
 {
     public class HttpPhysicsAssistant
     {

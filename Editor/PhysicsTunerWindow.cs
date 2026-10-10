@@ -3,7 +3,7 @@ using System.IO;
 using UnityEditor;
 using UnityEngine;
 
-namespace VrmPhysicsTuner.Editor
+namespace Neko.VrmPhysicsTuner.Editor
 {
     public class PhysicsTunerWindow : EditorWindow
     {
@@ -28,7 +28,7 @@ namespace VrmPhysicsTuner.Editor
         private bool _previewing;
         private double _lastTick;
 
-        [MenuItem("Tools/VRM Physics Tuner")]
+        [MenuItem("N.E.K.O/VRM Physics Tuner")]
         public static void Open()
         {
             var window = GetWindow<PhysicsTunerWindow>();

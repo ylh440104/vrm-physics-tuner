@@ -1,18 +1,19 @@
 {
-  "name": "com.ylh440104.vrm-physics-tuner",
+  "name": "com.project-neko.vrm-physics-tuner",
   "version": "0.2.0",
-  "displayName": "VRM Physics Tuner",
-  "description": "Scan a VRM/avatar hierarchy, auto-fit spring bone colliders from real bone geometry, and export an engine-agnostic physics config.",
+  "displayName": "N.E.K.O VRM Physics Tuner",
+  "description": "Unity editor tool for the N.E.K.O project. Scans a VRM avatar hierarchy, auto-fits spring bone colliders from real bone geometry, and exports the physics config consumed by the N.E.K.O web runtime.",
   "unity": "2021.3",
   "keywords": [
     "vrm",
     "springbone",
     "physics",
     "hair",
-    "skirt"
+    "skirt",
+    "neko"
   ],
   "author": {
-    "name": "ylh440104"
+    "name": "Project N.E.K.O"
   },
   "license": "MIT"
 }

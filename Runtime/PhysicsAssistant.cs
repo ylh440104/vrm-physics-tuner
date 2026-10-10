@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace VrmPhysicsTuner
+namespace Neko.VrmPhysicsTuner
 {
     public class PhysicsSuggestion
     {

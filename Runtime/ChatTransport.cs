@@ -1,6 +1,6 @@
 using System;
 
-namespace VrmPhysicsTuner
+namespace Neko.VrmPhysicsTuner
 {
     public class AssistantEndpoint
     {

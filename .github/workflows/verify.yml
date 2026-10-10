@@ -31,8 +31,8 @@ jobs:
           test -f package.json
           test -f README.md
           test -f LICENSE
-          test -f Runtime/VrmPhysicsTuner.Runtime.asmdef
-          test -f Editor/VrmPhysicsTuner.Editor.asmdef
+          test -f Runtime/Neko.VrmPhysicsTuner.Runtime.asmdef
+          test -f Editor/Neko.VrmPhysicsTuner.Editor.asmdef
           echo "package layout ok"
 
       - name: Check no comments in sources

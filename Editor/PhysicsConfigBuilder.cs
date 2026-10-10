@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace VrmPhysicsTuner.Editor
+namespace Neko.VrmPhysicsTuner.Editor
 {
     public static class PhysicsConfigBuilder
     {

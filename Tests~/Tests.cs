@@ -1,9 +1,9 @@
 using System;
 using System.Collections.Generic;
-using VrmPhysicsTuner;
+using Neko.VrmPhysicsTuner;
 using UnityEngine;
 
-namespace VrmPhysicsTuner.Tests
+namespace Neko.VrmPhysicsTuner.Tests
 {
     public static class Program
     {

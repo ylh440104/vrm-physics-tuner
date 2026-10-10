@@ -1,10 +1,12 @@
-# VRM Physics Tuner
+# N.E.K.O VRM Physics Tuner
 
-给 VRM 模型调 SpringBone 物理参数用的 Unity 编辑器工具。
+N.E.K.O 的配套 Unity 编辑器工具，用来给 VRM 模型调 SpringBone 物理参数。
 
-做这个东西的起因很简单：网页端跑 VRM 的时候，碰撞体半径老是偏大，头发会莫名其妙横着支棱着。查下来是 UniVRM 导出时碰撞体没跟着缩放走（[vrm-c/UniVRM#673](https://github.com/vrm-c/UniVRM/issues/673)），但网页端拿不到模型原始数据，只能靠经验值硬压——现在压的是 50%，对所有模型一刀切。
+网页端（`N.E.K.O` 本体）跑 VRM 的时候有个老毛病：碰撞体半径偏大，头发会莫名其妙横着支棱着，像是被一堵看不见的墙挡住。查下来是 UniVRM 导出时碰撞体没跟着缩放走（[vrm-c/UniVRM#673](https://github.com/vrm-c/UniVRM/issues/673)），但网页端拿不到模型原始数据，只能在加载时统一压 50%——**所有模型一刀切，不可能对**。
 
-这工具就是来解决这个的：在 Unity 里打开模型，按骨骼实际几何自动算一遍碰撞体，导出一份配置，网页端读它，就不用再猜了。
+这个工具就是把那个经验值换掉：在 Unity 里打开模型，按骨骼实际几何算一遍碰撞体，导出一份配置，网页端读它。
+
+它只产出配置，不参与运行时。装到 Unity 里就行，不会进游戏包。
 
 ## 装
 
@@ -18,13 +20,21 @@ https://github.com/ylh440104/vrm-physics-tuner.git
 
 ## 用
 
-菜单 `Tools` → `VRM Physics Tuner`。
+菜单 `N.E.K.O` → `VRM Physics Tuner`。
 
 1. 把模型的根节点拖到 **Avatar Root**
 2. 点 **Scan**，它会扫出头发/裙摆/尾巴这些带弹簧骨的链
 3. 点 **Build Config**，按骨骼实际位置算碰撞体半径
 4. 点 **Start Preview**，在 Scene 里看这些链动起来
 5. 填 **Export Path**，点 **Export JSON**
+
+## 网页端怎么接
+
+导出的 JSON 放到 `static/vrm/configs/{模型名}_physics.json`，和现有的 `{模型名}_emotion.json` 同目录。
+
+N.E.K.O 的 `vrm_router.py` 会通过 `GET /api/model/vrm/physics_profile/{model_name}` 把它吐出来，`vrm-physics-profile.js` 在模型加载后读它，覆盖 three-vrm 的碰撞体半径和关节参数。
+
+没有配置文件的模型走原来的 50% 回退逻辑，行为不变。
 
 ## 预览
 
@@ -114,6 +124,21 @@ key 只存在窗口内存里，不会落盘。
   ]
 }
 ```
+
+## 开发
+
+`Tests~/` 里有一套不依赖 Unity 编辑器的验证（Unity 会自动忽略带 `~` 的目录）：
+
+- `tests.csproj` —— 262 项行为测试，跑在 Unity API 的轻量替身上
+- `real-unity.csproj` —— 用 NuGet 上的真实 UnityEngine 程序集编译整个包，确认用到的 API 都存在
+
+```bash
+cd Tests~
+dotnet run --project tests.csproj -c Release
+dotnet build real-unity.csproj -c Release
+```
+
+CI 每次 push 都会跑这两步，外加包结构检查和注释检查。见 `.github/workflows/verify.yml`。
 
 ## 许可
 
