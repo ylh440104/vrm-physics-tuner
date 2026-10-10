@@ -1,0 +1,42 @@
+name: verify
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Run behaviour tests
+        working-directory: Tests~
+        run: |
+          dotnet run --project tests.csproj -c Release
+
+      - name: Compile against real Unity assemblies
+        working-directory: Tests~
+        run: |
+          dotnet build real-unity.csproj -c Release
+
+      - name: Check package layout
+        run: |
+          test -f package.json
+          test -f README.md
+          test -f LICENSE
+          test -f Runtime/VrmPhysicsTuner.Runtime.asmdef
+          test -f Editor/VrmPhysicsTuner.Editor.asmdef
+          echo "package layout ok"
+
+      - name: Check no comments in sources
+        run: |
+          count=$(grep -rn '//\|/\*' --include='*.cs' Runtime Editor | wc -l)
+          echo "comment lines: $count"
+          test "$count" -eq 0
